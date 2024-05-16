@@ -1,6 +1,16 @@
 set time zone 'UTC';
 create extension pgcrypto;
 
+CREATE TABLE cafes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    description TEXT,
+    image VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
 CREATE TABLE coffees (
     id serial PRIMARY KEY,
     name VARCHAR (255) NOT NULL UNIQUE,
@@ -63,6 +73,14 @@ CREATE TABLE order_items (
     updated_at TIMESTAMP NOT NULL,
     deleted_at TIMESTAMP
 );
+
+INSERT INTO cafes (name, address, description, image, created_at, updated_at) 
+VALUES 
+('Cafe Mocha', '123 Coffee St, Bean City', 'A cozy place for coffee lovers', 'https://example.com/images/cafe-mocha.jpg', NOW(), NOW()), 
+('Espresso Express', '456 Espresso Ln, Java Town', 'Quick and quality espresso shots', 'https://example.com/images/espresso-express.jpg', NOW(), NOW()), 
+('Latte Lounge', '789 Latte Ave, Milk City', 'Relax and enjoy our special lattes', 'https://example.com/images/latte-lounge.jpg', NOW(), NOW()), 
+('Brewed Awakenings', '101 Brew Blvd, Caffeineville', 'Wake up with our freshly brewed coffee', 'https://example.com/images/brewed-awakenings.jpg', NOW(), NOW()), 
+('The Coffee House', '202 Roast Rd, Beantown', 'A home away from home for coffee enthusiasts', 'https://example.com/images/the-coffee-house.jpg', NOW(), NOW());
 
 INSERT INTO ingredients (id, name, created_at, updated_at) VALUES (1, 'Espresso', CURRENT_DATE, CURRENT_DATE);
 INSERT INTO ingredients (id, name, created_at, updated_at) VALUES (2, 'Semi Skimmed Milk', CURRENT_DATE, CURRENT_DATE);

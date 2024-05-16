@@ -121,6 +121,12 @@ func main() {
 	r.Handle("/orders/{id:[0-9]+}", authMiddleware.IsAuthorized(orderHandler.UpdateOrder)).Methods("PUT")
 	r.Handle("/orders/{id:[0-9]+}", authMiddleware.IsAuthorized(orderHandler.DeleteOrder)).Methods("DELETE")
 
+	cafeHandler := handlers.NewCafe(db, logger)
+	r.Handle("/cafes", cafeHandler).Methods("GET")
+	r.HandleFunc("/cafes", cafeHandler.CreateCafe).Methods("POST")
+	r.HandleFunc("/cafes/{id:[0-9]+}", cafeHandler.UpdateCafe).Methods("PUT")
+	r.HandleFunc("/cafes/{id:[0-9]+}", cafeHandler.DeleteCafe).Methods("DELETE")
+
 	logger.Info("Starting service", "bind", conf.BindAddress, "metrics", conf.MetricsAddress)
 	err = http.ListenAndServe(conf.BindAddress, r)
 	if err != nil {

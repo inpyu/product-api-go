@@ -25,6 +25,10 @@ type Connection interface {
 	DeleteOrder(int, int) error
 	CreateCoffee(model.Coffee) (model.Coffee, error)
 	UpsertCoffeeIngredient(model.Coffee, model.Ingredient) (model.CoffeeIngredient, error)
+	GetCafes(*int) (model.Cafes, error)
+	CreateCafe(model.Cafe) (model.Cafe, error)
+	UpdateCafe(int, model.Cafe) (model.Cafe, error)
+	DeleteCafe(int) error
 }
 
 type PostgresSQL struct {
@@ -479,4 +483,105 @@ func (c *PostgresSQL) UpsertCoffeeIngredient(coffee model.Coffee, ingredient mod
 	}
 
 	return i, nil
+}
+
+// Cafe API
+func (c *PostgresSQL) GetCafes(cafeid *int) (model.Cafes, error) {
+	cos := model.Cafes{}
+
+	if cafeid != nil {
+		err := c.db.Select(&cos, "SELECT * FROM cafes WHERE id = $1", &cafeid)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := c.db.Select(&cos, "SELECT * FROM cafes")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return cos, nil
+}
+
+// CreateOrder creates a new order in the database
+func (c *PostgresSQL) CreateCafe(cafe model.Cafe) (model.Cafe, error) {
+	m := model.Cafe{}
+
+	rows, err := c.db.NamedQuery(
+		`INSERT INTO cafes (name, address, description, image, created_at, updated_at) 
+		VALUES(:name, :address, :description, :image, now(), now()) 
+		RETURNING id;`, map[string]interface{}{
+			"name":        cafe.Name,
+			"address":     cafe.Address,
+			"description": cafe.Description,
+			"image":       cafe.Image,
+		})
+	if err != nil {
+		return m, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err := rows.StructScan(&m)
+		if err != nil {
+			return m, err
+		}
+	}
+
+	return m, nil
+}
+
+func (c *PostgresSQL) UpdateCafe(cafeID int, cafe model.Cafe) (model.Cafe, error) {
+	m := model.Cafe{}
+
+	_, err := c.db.NamedExec(
+		`UPDATE cafes 
+        SET name = :name, address = :address, description = :description, image = :image, updated_at = now()
+        WHERE id = :id;`, map[string]interface{}{
+			"id":          cafeID,
+			"name":        cafe.Name,
+			"address":     cafe.Address,
+			"description": cafe.Description,
+			"image":       cafe.Image,
+		})
+
+	if err != nil {
+		return m, err
+	}
+
+	m.ID = cafeID
+	m.Name = cafe.Name
+	m.Address = cafe.Address
+	m.Description = cafe.Description
+	m.Image = cafe.Image
+
+	return m, nil
+}
+
+// DeleteOrder deletes an existing order in the database
+func (c *PostgresSQL) DeleteCafe(cafeID int) error {
+	tx := c.db.MustBegin()
+
+	// remove existing items from order
+	_, err := tx.NamedExec(
+		`DELETE FROM cafes WHERE id = :cafe_id `, map[string]interface{}{
+			"cafe_id": cafeID,
+		})
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

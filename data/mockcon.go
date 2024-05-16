@@ -156,3 +156,43 @@ func (c *MockConnection) UpsertCoffeeIngredient(coffee model.Coffee, ingredient 
 
 	return model.CoffeeIngredient{}, args.Error(1)
 }
+
+func (c *MockConnection) GetCafes(*int) (model.Cafes, error) {
+	args := c.Called()
+
+	if m, ok := args.Get(0).(model.Cafes); ok {
+		return m, args.Error(1)
+	}
+
+	return nil, args.Error(1)
+}
+
+func (c *MockConnection) CreateCafe(cafe model.Cafe) (model.Cafe, error) {
+	args := c.Called()
+
+	if m, ok := args.Get(0).(model.Cafe); ok {
+		return m, args.Error(1)
+	}
+
+	return model.Cafe{}, args.Error(1)
+}
+
+func (c *MockConnection) UpdateCafe(cafeID int, cafe model.Cafe) (model.Cafe, error) {
+	args := c.Called()
+
+	if m, ok := args.Get(0).(model.Cafe); ok {
+		return m, args.Error(1)
+	}
+
+	return model.Cafe{}, args.Error(1)
+}
+
+func (c *MockConnection) DeleteCafe(cafeID int) error {
+	args := c.Called()
+
+	if err, ok := args.Get(0).(error); ok {
+		return err
+	}
+
+	return nil
+}
