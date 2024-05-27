@@ -123,6 +123,7 @@ func main() {
 
 	cafeHandler := handlers.NewCafe(db, logger)
 	r.Handle("/cafes", cafeHandler).Methods("GET")
+	r.Handle("/cafes/{id:[0-9]+}", cafeHandler).Methods("GET")
 	r.HandleFunc("/cafes", cafeHandler.CreateCafe).Methods("POST")
 	r.HandleFunc("/cafes/{id:[0-9]+}", cafeHandler.UpdateCafe).Methods("PUT")
 	r.HandleFunc("/cafes/{id:[0-9]+}", cafeHandler.DeleteCafe).Methods("DELETE")

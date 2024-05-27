@@ -69,3 +69,36 @@ func (h *HTTP) GetIngredientsForCoffee(coffeeID int) ([]model.Ingredient, error)
 
 	return ingredients, nil
 }
+
+// GetCafes retrieves a list of coffees
+func (h *HTTP) GetCafes() ([]model.Cafe, error) {
+	log.Print("INFO: Executing GetCafes")
+	resp, err := h.client.Get(fmt.Sprintf("%s/cafes", h.baseURL))
+	if err != nil {
+		return nil, err
+	}
+
+	cafes := model.Cafes{}
+	cafes.FromJSON(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return cafes, nil
+}
+
+// GetCoffee retrieves a single coffee
+func (h *HTTP) GetCafe(cafeID int) (*model.Cafe, error) {
+	resp, err := h.client.Get(fmt.Sprintf("%s/cafes/%d", h.baseURL, cafeID))
+	if err != nil {
+		return nil, err
+	}
+
+	cafe := model.Cafe{}
+	err = cafe.FromJSON(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cafe, nil
+}
