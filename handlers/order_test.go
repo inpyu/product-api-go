@@ -100,7 +100,6 @@ func TestUnableToReturnOrders(t *testing.T) {
 // TestCreateOrder - Tests success criteria
 func TestCreateOrder(t *testing.T) {
 	c, rw := setupOrderHandler(t)
-
 	userID := 1
 	r := httptest.NewRequest("POST", "/orders", nil)
 
