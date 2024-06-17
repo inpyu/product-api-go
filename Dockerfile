@@ -1,27 +1,21 @@
 FROM alpine:latest as base
 
+# Create group and user
 RUN addgroup api && \
   adduser -D -G api api
 
+# Create application directory
 RUN mkdir /app
 
-# Copy AMD binaries
-FROM base AS image-amd64
+# Install necessary libraries for the binary (if needed)
+RUN apk add --no-cache libc6-compat
 
-COPY amd64/product-api /app/product-api
+# Copy the product-api binary
+COPY main /app/product-api
 RUN chmod +x /app/product-api
 
-# Copy ARM binaries
-FROM base AS image-arm64
+# Copy the configuration file
+COPY conf.json /conf.json
 
-COPY arm64/product-api /app/product-api
-RUN chmod +x /app/product-api
-
-FROM image-${TARGETARCH}
-
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-
-RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM"
-
+# Set entrypoint
 ENTRYPOINT [ "/app/product-api" ]

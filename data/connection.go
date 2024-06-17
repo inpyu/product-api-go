@@ -490,7 +490,7 @@ func (c *PostgresSQL) GetCafes(cafeid *int) (model.Cafes, error) {
 	cos := model.Cafes{}
 
 	if cafeid != nil {
-		err := c.db.Select(&cos, "SELECT * FROM cafes WHERE id = $1", &cafeid)
+		err := c.db.Select(&cos, "SELECT * FROM cafes WHERE id = $1", cafeid)
 		if err != nil {
 			return nil, err
 		}
@@ -504,32 +504,41 @@ func (c *PostgresSQL) GetCafes(cafeid *int) (model.Cafes, error) {
 	return cos, nil
 }
 
-// CreateOrder creates a new order in the database
+// CreateCafe creates a new order in the database
 func (c *PostgresSQL) CreateCafe(cafe model.Cafe) (model.Cafe, error) {
-	m := model.Cafe{}
+	tx := c.db.MustBegin()
 
-	rows, err := c.db.NamedQuery(
+	var cafeID int
+
+	// Use NamedExec instead of QueryRowx
+	_, err := tx.NamedExec(
 		`INSERT INTO cafes (name, address, description, image, created_at, updated_at) 
-		VALUES(:name, :address, :description, :image, now(), now()) 
-		RETURNING id;`, map[string]interface{}{
-			"name":        cafe.Name,
-			"address":     cafe.Address,
-			"description": cafe.Description,
-			"image":       cafe.Image,
-		})
+		VALUES (:name, :address, :description, :image, now(), now())`, cafe)
 	if err != nil {
-		return m, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		err := rows.StructScan(&m)
-		if err != nil {
-			return m, err
-		}
+		tx.Rollback()
+		return model.Cafe{}, err
 	}
 
-	return m, nil
+	// Get the last inserted id
+	err = tx.QueryRowx("SELECT LASTVAL()").Scan(&cafeID)
+	if err != nil {
+		tx.Rollback()
+		return model.Cafe{}, err
+	}
+
+	var newCafe model.Cafe
+	err = tx.Get(&newCafe, "SELECT id, name, address, description, image FROM cafes WHERE id=$1", cafeID)
+	if err != nil {
+		tx.Rollback()
+		return model.Cafe{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return model.Cafe{}, err
+	}
+
+	return newCafe, nil
 }
 
 func (c *PostgresSQL) UpdateCafe(cafeID int, cafe model.Cafe) (model.Cafe, error) {

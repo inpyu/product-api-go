@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   api:
-    image: "hashicorpdemoapp/product-api:v0.0.22"
+    image: "dayeon620/product-api:v0.0.22"
     ports:
       - "19090:9090"
     volumes:

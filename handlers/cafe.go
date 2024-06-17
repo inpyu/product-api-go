@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -33,8 +35,8 @@ func (c *Cafe) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if vars["id"] != "" {
 		cId, err := strconv.Atoi(vars["id"])
 		if err != nil {
-			c.log.Error("Cafe provided could not be converted to an integer", "error", err)
-			http.Error(rw, "Unable to list ingredients", http.StatusInternalServerError)
+			c.log.Error("Cafe ID could not be converted to an integer", "error", err)
+			http.Error(rw, "Invalid cafe ID", http.StatusInternalServerError)
 			return
 		}
 		cafeID = &cId
@@ -42,15 +44,17 @@ func (c *Cafe) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	cofs, err := c.con.GetCafes(cafeID)
 	if err != nil {
-		c.log.Error("Unable to get products from database", "error", err)
-		http.Error(rw, "Unable to list products", http.StatusInternalServerError)
+		c.log.Error("Unable to get cafes from database", "error", err)
+		http.Error(rw, "Unable to list cafes", http.StatusInternalServerError)
 		return
 	}
 
-	d, err := cofs.ToJSON()
+	var d []byte
+	d, err = json.Marshal(cofs)
+
 	if err != nil {
-		c.log.Error("Unable to convert products to JSON", "error", err)
-		http.Error(rw, "Unable to list products", http.StatusInternalServerError)
+		c.log.Error("Unable to convert cafes to JSON", "error", err)
+		http.Error(rw, "Unable to list cafes", http.StatusInternalServerError)
 		return
 	}
 
@@ -61,23 +65,33 @@ func (c *Cafe) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 func (c *Cafe) CreateCafe(rw http.ResponseWriter, r *http.Request) {
 	c.log.Info("Handle Cafe | CreateCafe")
 
-	body := model.Cafe{}
+	var cafes []model.Cafe
 
-	err := json.NewDecoder(r.Body).Decode(&body)
+	// 요청 본문을 읽고 출력합니다.
+	reqBody, _ := io.ReadAll(r.Body)
+	c.log.Info("Request Body", "body", string(reqBody))
+	r.Body = io.NopCloser(bytes.NewBuffer(reqBody)) // 요청 본문을 리셋합니다.
+
+	err := json.NewDecoder(r.Body).Decode(&cafes)
 	if err != nil {
 		c.log.Error("Unable to decode JSON", "error", err)
 		http.Error(rw, "Unable to parse request body", http.StatusInternalServerError)
 		return
 	}
 
-	cafe, err := c.con.CreateCafe(body)
+	c.log.Info("Decoded Body", "body", cafes)
+
+	// 단일 카페 객체로 처리
+	cafe := cafes[0]
+
+	createdCafe, err := c.con.CreateCafe(cafe)
 	if err != nil {
 		c.log.Error("Unable to create new cafe", "error", err)
 		http.Error(rw, fmt.Sprintf("Unable to create new cafe: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	d, err := cafe.ToJSON()
+	d, err := createdCafe.ToJSON()
 	if err != nil {
 		c.log.Error("Unable to convert cafe to JSON", "error", err)
 		http.Error(rw, "Unable to create new cafe", http.StatusInternalServerError)
